@@ -1,9 +1,12 @@
-import org.apache.hadoop.conf.Configuration;
-
 import java.io.*;
 import java.util.LinkedList;
 
-public class PageRankBase {
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+public class PageRankMapReduce {
     class Edge{
         int target;
         double value;
@@ -18,14 +21,13 @@ public class PageRankBase {
     LinkedList<Edge>[] G;
     int[] outDegree;
     int n;
-
     public static void main(String[] args) throws IOException {
-        String inputFilePath = "D:\\study\\1\\程设\\大作业\\pagerank\\pagerank\\src\\main\\java\\input.txt";
-        PageRankBase pageRankBase = new PageRankBase();
-        pageRankBase.init(inputFilePath);
+        String inputfile = args[0];
+//        String outputfile = args[2];
+        PageRankMapReduce pageRankBase = new PageRankMapReduce();
+        pageRankBase.init(inputfile);
         pageRankBase.solve();
     }
-
     /**
      * 读入，初始化图
      */
@@ -71,26 +73,22 @@ public class PageRankBase {
         for(int i=0;i<n;i++){
             values[i] = 1.0/n;
         }
-        int T = 10000000;
+        int T = 1000000;
         while(T-- > 0){
             for(int i=0;i<n;i++){
                 System.out.printf("%.6f ",values[i]);
             }
             System.out.println();
-
-            Configuration conf = new Configuration();
-
             for(int i=0;i<n;i++){
                 double[] row = getRow(i);
                 double res = 0;
                 for(int j=0;j<n;j++){
-//                    System.out.printf("%.2f*%.2f ",row[j],values[j]);
-//                    System.out.printf("%.2f ",row[j]);
                     res += row[j] * values[j];
                 }
-//                System.out.println(res);
                 newValues[i] = res;
             }
+
+
             values = newValues;
         }
     }
@@ -100,17 +98,15 @@ public class PageRankBase {
         for(Edge edge : G[i]){
             res[edge.target] = edge.value;
         }
+
         return res;
     }
     private static BufferedReader getBuffer(String filepath){
         try{
-//            Path input_file = new Path(filepath);
-//            FileSystem fs = FileSystem.get(new Configuration());
-//            DataInputStream stream = new DataInputStream(fs.open(input_file));
-            File file = new File(filepath);
-            FileInputStream fis = new FileInputStream(file);
-
-            return new BufferedReader(new InputStreamReader(fis));
+            Path input_file = new Path(filepath);
+            FileSystem fs = FileSystem.get(new Configuration());
+            DataInputStream stream = new DataInputStream(fs.open(input_file));
+            return new BufferedReader(new InputStreamReader(stream));
         }catch (Exception e){
             e.printStackTrace();
         }
