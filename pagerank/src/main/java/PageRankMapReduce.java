@@ -21,6 +21,7 @@ public class PageRankMapReduce {
     LinkedList<Edge>[] G;
     int[] outDegree;
     int n;
+    static double beta;
     String deadEnds;
     static BufferedWriter log;
     public static void main(String[] args) throws Exception {
@@ -28,7 +29,8 @@ public class PageRankMapReduce {
         String matrixFile = args[1];
         String outputFile = args[2];
         int T = Integer.parseInt(args[3]);
-        String logFile = args[4];
+        beta = Double.parseDouble(args[4]);
+        String logFile = args[5];
         log = getBufferWriterLocal(logFile);
         PageRankMapReduce pageRankBase = new PageRankMapReduce();
         pageRankBase.init(inputFile,matrixFile);
@@ -89,7 +91,6 @@ public class PageRankMapReduce {
      */
     private void solve(int T,String matrixFilePath,String outputFilePath) throws IOException, InterruptedException, ClassNotFoundException {
         BigDecimal[] values = new BigDecimal[n];
-        BigDecimal[] newValues = new BigDecimal[n];
         for(int i=0;i<n;i++){
             values[i] = BigDecimal.valueOf(1.0/n);
         }
@@ -98,7 +99,7 @@ public class PageRankMapReduce {
         for(int t = 0;t<T;t++){
             // 设置总数n
             conf.set("n",String.valueOf(n));
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             for(BigDecimal value : values){
                 sb.append(value).append(" ");
             }
@@ -126,6 +127,11 @@ public class PageRankMapReduce {
                 diff += Math.pow(values[id].doubleValue() - Double.parseDouble(row[1]),2);
                 values[id] = new BigDecimal(row[1]);
             }
+            // 考虑阻尼系数
+            for(int i=0;i<n;i++){
+                values[i] = values[i].multiply(new BigDecimal(beta))
+                        .add(BigDecimal.ONE.divide(new BigDecimal(n)).multiply(new BigDecimal(1-beta)));
+            }
             diff = Math.sqrt(diff/n)*n;
             String temp = new Date() + String.format(" 第%d轮结果，差值%f\n",t,diff);
             System.out.print(temp);
@@ -133,6 +139,11 @@ public class PageRankMapReduce {
             log.flush();
             if(diff <= 0.001)break;
         }
+        StringBuilder sb = new StringBuilder();
+        for(BigDecimal value : values){
+            sb.append(value).append(" ");
+        }
+        log.write(sb.toString());
         log.close();
     }
 
