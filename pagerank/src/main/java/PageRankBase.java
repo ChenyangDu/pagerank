@@ -1,35 +1,29 @@
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 
 import java.io.*;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.util.LinkedList;
 
 public class PageRankBase {
-    class Edge{
-        int target;
-        double value;
-        public Edge(int target){
-            this.target = target;
-        }
-        public Edge(int target,double value){
-            this.target = target;
-            this.value = value;
-        }
-    }
+
     LinkedList<Edge>[] G;
     int[] outDegree;
     int n;
-
     public static void main(String[] args) throws IOException {
-        String inputFilePath = "D:\\study\\1\\程设\\大作业\\pagerank\\pagerank\\src\\main\\java\\input.txt";
+        String inputFile = args[0];
+        String outputFile = args[1];
         PageRankBase pageRankBase = new PageRankBase();
-        pageRankBase.init(inputFilePath);
+        pageRankBase.init(inputFile,outputFile);
         pageRankBase.solve();
     }
-
     /**
      * 读入，初始化图
      */
-    private void init(String inputFilePath) throws IOException {
+    private void init(String inputFilePath,String outputFilePath) throws IOException {
         BufferedReader br = getBuffer(inputFilePath);
         assert br != null;
         String line = br.readLine();
@@ -49,57 +43,63 @@ public class PageRankBase {
             G[t].add(new Edge(s));
             outDegree[s]++;
         }
+
+        BufferedWriter bw = getBufferWriter(outputFilePath);
+        assert bw != null;
         for(int i=0;i<n;i++){
+            bw.write(i+'0');
+            bw.write(' ');
             for(Edge edge : G[i]){
-                edge.value = 1.0/outDegree[edge.target];
+                edge.value = BigDecimal.valueOf(1.0/outDegree[edge.target]);
+                bw.write(edge.value.toString());
+                bw.write(' ');
             }
+            bw.write('\n');
         }
-//        for(int i=0;i<n;i++){
-//            System.out.printf("%n%d:%n",i);
-//            for(Edge edge : G[i]){
-//                System.out.printf("%d %f%n",edge.target,edge.value);
-//            }
-//        }
+        bw.close();
     }
 
     /**
      * PageRank
      */
     private void solve(){
-        double[] values = new double[n];
-        double[] newValues = new double[n];
+        BigDecimal[] values = new BigDecimal[n];
+        BigDecimal[] newValues = new BigDecimal[n];
         for(int i=0;i<n;i++){
-            values[i] = 1.0/n;
+            values[i] = BigDecimal.valueOf(1.0/n);
         }
-        int T = 10000000;
+        int T = 1000000;
         while(T-- > 0){
+            DecimalFormat df1 = new DecimalFormat("0.00");
             for(int i=0;i<n;i++){
-                System.out.printf("%.6f ",values[i]);
+                System.out.printf("%s ",df1.format(values[i]));
             }
             System.out.println();
-
-            Configuration conf = new Configuration();
-
             for(int i=0;i<n;i++){
-                double[] row = getRow(i);
-                double res = 0;
+                BigDecimal[] row = getRow(i);
+                BigDecimal res = BigDecimal.ZERO;
                 for(int j=0;j<n;j++){
-//                    System.out.printf("%.2f*%.2f ",row[j],values[j]);
-//                    System.out.printf("%.2f ",row[j]);
-                    res += row[j] * values[j];
+                    assert row[j] != null;
+                    res = res.add( row[j].multiply(values[j]) );
                 }
-//                System.out.println(res);
                 newValues[i] = res;
             }
+
+
             values = newValues;
         }
     }
 
-    private double[] getRow(int i){
-        double[] res = new double[n];
+    private BigDecimal[] getRow(int i){
+        BigDecimal[] res = new BigDecimal[n];
+        for(int j=0;j<n;j++){
+            res[j] = BigDecimal.ZERO;
+        }
         for(Edge edge : G[i]){
             res[edge.target] = edge.value;
         }
+
+
         return res;
     }
     private static BufferedReader getBuffer(String filepath){
@@ -111,6 +111,16 @@ public class PageRankBase {
             FileInputStream fis = new FileInputStream(file);
 
             return new BufferedReader(new InputStreamReader(fis));
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+    private static BufferedWriter getBufferWriter(String filePath){
+        try {
+            File file = new File(filePath);
+            FileOutputStream fis = new FileOutputStream(file);
+            return new BufferedWriter(new OutputStreamWriter(fis, "UTF-8"));
         }catch (Exception e){
             e.printStackTrace();
         }
