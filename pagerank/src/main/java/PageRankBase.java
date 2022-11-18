@@ -1,11 +1,6 @@
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-
 import java.io.*;
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
+import java.util.Date;
 import java.util.LinkedList;
 
 public class PageRankBase {
@@ -13,17 +8,27 @@ public class PageRankBase {
     LinkedList<Edge>[] G;
     int[] outDegree;
     int n;
-    public static void main(String[] args) throws IOException {
-        String inputFile = args[0];
-        String outputFile = args[1];
+    static double beta;
+    String deadEnds;
+    static BufferedWriter log;
+    public static void main(String[] args) throws Exception {
+        if(args.length != 4){
+            System.out.print("Usage <inputFile> <T> <beta> <logFile>\n");
+        }
+        String inputFile = args[0]; // 输入文件
+        int T = Integer.parseInt(args[1]); // 设置最大轮次
+        beta = Double.parseDouble(args[2]); // β值
+        String logFile = args[3]; // 日志文件
+
+        log = getBufferWriter(logFile);
         PageRankBase pageRankBase = new PageRankBase();
-        pageRankBase.init(inputFile,outputFile);
-        pageRankBase.solve();
+        pageRankBase.init(inputFile);
+        pageRankBase.solve(T);
     }
     /**
      * 读入，初始化图
      */
-    private void init(String inputFilePath,String outputFilePath) throws IOException {
+    private void init(String inputFilePath) throws IOException {
         BufferedReader br = getBuffer(inputFilePath);
         assert br != null;
         String line = br.readLine();
@@ -31,6 +36,7 @@ public class PageRankBase {
 
         G = new LinkedList[n];
         outDegree = new int[n];
+        boolean[] hasOut = new boolean[n];
 
         while((line = br.readLine()) != null){
             // 一行一行地处理...
@@ -42,39 +48,39 @@ public class PageRankBase {
             if(G[t] == null)G[t] = new LinkedList<>();
             G[t].add(new Edge(s));
             outDegree[s]++;
+            hasOut[s] = true;
         }
 
-        BufferedWriter bw = getBufferWriter(outputFilePath);
-        assert bw != null;
         for(int i=0;i<n;i++){
-            bw.write(i+'0');
-            bw.write(' ');
             for(Edge edge : G[i]){
                 edge.value = BigDecimal.valueOf(1.0/outDegree[edge.target]);
-                bw.write(edge.value.toString());
-                bw.write(' ');
             }
-            bw.write('\n');
         }
-        bw.close();
+
+        // 处理deadEnds
+        StringBuilder stringBuffer = new StringBuilder();
+        for(int i=0;i<n;i++){
+            if(!hasOut[i])stringBuffer.append(i).append(" ");
+        }
+        deadEnds = stringBuffer.toString();
     }
 
     /**
      * PageRank
      */
-    private void solve(){
+    private void solve(int T) throws IOException, InterruptedException, ClassNotFoundException {
         BigDecimal[] values = new BigDecimal[n];
         BigDecimal[] newValues = new BigDecimal[n];
         for(int i=0;i<n;i++){
             values[i] = BigDecimal.valueOf(1.0/n);
         }
-        int T = 1000000;
-        while(T-- > 0){
-            DecimalFormat df1 = new DecimalFormat("0.00");
-            for(int i=0;i<n;i++){
-                System.out.printf("%s ",df1.format(values[i]));
-            }
-            System.out.println();
+
+        for(int t = 0;t<T;t++){
+            // 设置总数n
+//            DecimalFormat df1 = new DecimalFormat("0.000000");
+//            for(int i=0;i<n;i++){
+//                System.out.printf("%s ",df1.format(values[i]));
+//            }
             for(int i=0;i<n;i++){
                 BigDecimal[] row = getRow(i);
                 BigDecimal res = BigDecimal.ZERO;
@@ -84,12 +90,34 @@ public class PageRankBase {
                 }
                 newValues[i] = res;
             }
+            // 计算差值
+            double diff = 0;
+            for(int i=0;i<n;i++){
+                diff += Math.abs(values[i].subtract(newValues[i]).doubleValue());
+                values[i] = newValues[i];
+            }
 
-
-            values = newValues;
+            // 考虑阻尼系数
+            for(int i=0;i<n;i++){
+                values[i] = values[i].multiply(new BigDecimal(beta))
+                        .add(BigDecimal.ONE.divide(new BigDecimal(n)).multiply(new BigDecimal(1-beta)));
+            }
+//            diff = Math.sqrt(diff/n);
+//            diff*=n;
+            //标准差 <= 1/n*0.01
+            String temp = new Date() + String.format(" 第%d轮结果，差值%f\n",t,diff);
+            System.out.print(temp);
+            log.write(temp);
+            log.flush();
+            if(diff <= 0.01)break;
         }
+        StringBuilder sb = new StringBuilder();
+        for(BigDecimal value : values){
+            sb.append(value).append(" ");
+        }
+        log.write(sb.toString());
+        log.close();
     }
-
     private BigDecimal[] getRow(int i){
         BigDecimal[] res = new BigDecimal[n];
         for(int j=0;j<n;j++){
@@ -98,15 +126,10 @@ public class PageRankBase {
         for(Edge edge : G[i]){
             res[edge.target] = edge.value;
         }
-
-
         return res;
     }
     private static BufferedReader getBuffer(String filepath){
         try{
-//            Path input_file = new Path(filepath);
-//            FileSystem fs = FileSystem.get(new Configuration());
-//            DataInputStream stream = new DataInputStream(fs.open(input_file));
             File file = new File(filepath);
             FileInputStream fis = new FileInputStream(file);
 

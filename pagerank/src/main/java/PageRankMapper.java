@@ -4,6 +4,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,7 +29,10 @@ public class PageRankMapper extends Mapper<Object, Text, Text, Text> {
         }
 
         // 获取deadends
-        String[] deadEnds = context.getConfiguration().get("deadEnds").split(" ");
+        String deadEndStr = context.getConfiguration().get("deadEnds");
+        String[] deadEnds = new String[0];
+        if(deadEndStr != null && deadEndStr.length() > 0)
+            deadEnds = deadEndStr.split(" ");
 
         BigDecimal[] row = new BigDecimal[n];
         for(int i=0;i<n;i++){
@@ -46,7 +50,7 @@ public class PageRankMapper extends Mapper<Object, Text, Text, Text> {
         for(int j=0;j<n;j++){
             res = res.add( row[j].multiply(values[j]) );
         }
-
-        context.write(id,new Text(res.toString()));
+        DecimalFormat df1 = new DecimalFormat("0.000000000000000");
+        context.write(id,new Text(df1.format(res)));
     }
 }

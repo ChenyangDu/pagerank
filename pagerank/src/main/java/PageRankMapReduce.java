@@ -124,7 +124,7 @@ public class PageRankMapReduce {
                 String[] row = line.split("\t");
                 assert row.length == 2;
                 int id = Integer.parseInt(row[0]);
-                diff += Math.pow(values[id].doubleValue() - Double.parseDouble(row[1]),2);
+                diff += Math.abs(values[id].doubleValue() - Double.parseDouble(row[1]));
                 values[id] = new BigDecimal(row[1]);
             }
             // 考虑阻尼系数
@@ -132,12 +132,14 @@ public class PageRankMapReduce {
                 values[i] = values[i].multiply(new BigDecimal(beta))
                         .add(BigDecimal.ONE.divide(new BigDecimal(n)).multiply(new BigDecimal(1-beta)));
             }
-            diff = Math.sqrt(diff/n)*n;
+//            diff = Math.sqrt(diff/n);
+//            diff*=n;
+            //标准差 <= 1/n*0.01
             String temp = new Date() + String.format(" 第%d轮结果，差值%f\n",t,diff);
             System.out.print(temp);
             log.write(temp);
             log.flush();
-            if(diff <= 0.001)break;
+            if(diff <= 0.05)break;
         }
         StringBuilder sb = new StringBuilder();
         for(BigDecimal value : values){
