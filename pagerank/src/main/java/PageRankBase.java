@@ -1,5 +1,6 @@
 import java.io.*;
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.LinkedList;
 
@@ -77,10 +78,10 @@ public class PageRankBase {
 
         for(int t = 0;t<T;t++){
             // 设置总数n
-//            DecimalFormat df1 = new DecimalFormat("0.000000");
-//            for(int i=0;i<n;i++){
-//                System.out.printf("%s ",df1.format(values[i]));
-//            }
+            DecimalFormat df1 = new DecimalFormat("0.000000");
+            for(int i=0;i<n;i++){
+                System.out.printf("%s ",df1.format(values[i]));
+            }
             for(int i=0;i<n;i++){
                 BigDecimal[] row = getRow(i);
                 BigDecimal res = BigDecimal.ZERO;
@@ -99,8 +100,13 @@ public class PageRankBase {
 
             // 考虑阻尼系数
             for(int i=0;i<n;i++){
-                values[i] = values[i].multiply(new BigDecimal(beta))
-                        .add(BigDecimal.ONE.divide(new BigDecimal(n)).multiply(new BigDecimal(1-beta)));
+                newValues[i] = newValues[i].multiply(new BigDecimal(beta))
+                        .add(values[i].multiply(
+                                BigDecimal.ONE.divide(new BigDecimal(n)).multiply(new BigDecimal(1-beta))));
+            }
+
+            for(int i=0;i<n;i++){
+                values[i] = newValues[i];
             }
 //            diff = Math.sqrt(diff/n);
 //            diff*=n;
@@ -109,7 +115,7 @@ public class PageRankBase {
             System.out.print(temp);
             log.write(temp);
             log.flush();
-            if(diff <= 0.01)break;
+            if(diff <= 0.001)break;
         }
         StringBuilder sb = new StringBuilder();
         for(BigDecimal value : values){

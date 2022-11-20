@@ -67,6 +67,7 @@ public class PageRankMapReduce {
         for(int i=0;i<n;i++){
             bw.write(String.valueOf(i));
             bw.write(' ');
+            if(G[i] == null)G[i] = new LinkedList<>();
             for(Edge edge : G[i]){
                 edge.value = BigDecimal.valueOf(1.0/outDegree[edge.target]);
                 bw.write(String.valueOf(edge.target));
@@ -139,7 +140,7 @@ public class PageRankMapReduce {
             System.out.print(temp);
             log.write(temp);
             log.flush();
-            if(diff <= 0.05)break;
+            if(diff <= 0.01)break;
         }
         StringBuilder sb = new StringBuilder();
         for(BigDecimal value : values){
