@@ -71,33 +71,35 @@ plt.show()
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | 普通 | 1067ms | 5660ms | 164.462s | - | - |
 | 矩阵 |9ms|46ms|509ms|10.81s|141.59s|
-| 分布式| - | - | - | 
-
-Java 如何进行矩阵运算
 
 #### 3.2 时间复杂度分析
 时间复杂度是 $O(t(ε)n^2)$，其中 n 是网络节点个数，t(ε) 是迭代次数，这个迭代次数与收敛的阈值 ε 有关。  
 ```java
+
+$$ 
+ \sum_{i=1}^{T}(n*(n+n) + 2n) = \sum_{i=1}^{T}(2n^2 + 2n) = 2Tn^2 + 2Tn = O(n^2)
+$$
+
  for(int t = 0;t<T;t++){
-    // 设置总数n
-    for(int i=0;i<n;i++){
-        BigDecimal[] row = getRow(i);
+    // 遍历 n 个节点
+    for(int i=0;i<n;i++){   
+        BigDecimal[] row = getRow(i);    // 遍历第i个节点的n个入链权重，复杂度为 O(n)
         BigDecimal res = BigDecimal.ZERO;
-        for(int j=0;j<n;j++){
+        for(int j=0;j<n;j++){            // 将 row[i] * values[i]，复杂度为 O(n)
             assert row[j] != null;
             res = res.add( row[j].multiply(values[j]) );
         }
-        newValues[i] = res;
+        newValues[i] = res;  // nv = m * v  Note: 此时的 m 已经在getRow(i)中对 dead ends 做了修正
     }
 
-    // 考虑阻尼系数
-    for(int i=0;i<n;i++){
+    // 考虑阻尼系数，复杂度O(n)
+    for(int i=0;i<n;i++){ // 遍历 n 个节点，计算修正后的 nv = nv*β + nv*[1/n*(1-β)]
         newValues[i] = newValues[i].multiply(new BigDecimal(beta))
-                .add(values[i].multiply(
+                .add(newValues[i].multiply(
                         BigDecimal.ONE.divide(new BigDecimal(n)).multiply(new BigDecimal(1-beta))));
     }
 
-    // 计算差值
+    // 计算差值，复杂度为O(n)
     double diff = 0;
     for(int i=0;i<n;i++){
         diff += Math.abs(values[i].subtract(newValues[i]).doubleValue());
