@@ -39,19 +39,17 @@ node_pairs = list(set(node_pairs))
 #### 1.2 输出数据
 n:网页节点数
 e: 有向边个数
-dead ends: 没有任何出链的节点个数
-self-cycle: 节点自己指向自己
 
 1. **edges_n100_e947.txt**       
-n=100, e=947, dead_ends=xx, self-cycle=xx
-2. **edges_n1000_e9948.txt**
-n=1000, e=9948, dead_ends=xx, self-cycle=xx
-2. **edges_n10000_e99961.txt**
-n=10000, e=99961, dead_ends=xx, self-cycle=xx
-2. **edges_n100000_e999954.txt**
-n=100000, e=999954, dead_ends=xx, self-cycle=xx
-2. **edges_n1000000_e9999947.txt**
-n=1000000, e=9999947, dead_ends=xx, self-cycle=xx
+n=100, e=947
+2. **edges_n1000_e9948.txt**  
+n=1000, e=9948
+2. **edges_n10000_e99961.txt**  
+n=10000, e=99961
+2. **edges_n100000_e999954.txt**  
+n=100000, e=999954
+2. **edges_n1000000_e9999947.txt**  
+n=1000000, e=9999947
 
 ### 2. 数据可视化
 通过 python networkx 绘制有向图，以下以一个节点数20的图作为例子  
@@ -78,13 +76,11 @@ plt.show()
 | 矩阵 |9ms|46ms|509ms|10.81s|141.59s|
 
 #### 3.2 时间复杂度分析
-时间复杂度是 $O(t(ε)n^2)$，其中 n 是网络节点个数，t(ε) 是迭代次数，这个迭代次数与收敛的阈值 ε 有关。  
-```java
-
+时间复杂度是 $O(t(ε)n^2)$，其中 n 是网络节点个数，t(ε) 是迭代次数，这个迭代次数与收敛的阈值 ε 有关，ε 设置为0.001。  
 $$ 
  \sum_{i=1}^{T}(n*(n+n) + 2n) = \sum_{i=1}^{T}(2n^2 + 2n) = 2Tn^2 + 2Tn = O(n^2)
 $$
-
+```java
  for(int t = 0;t<T;t++){
     // 遍历 n 个节点
     for(int i=0;i<n;i++){   
