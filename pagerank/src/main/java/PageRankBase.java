@@ -10,7 +10,7 @@ public class PageRankBase {
     int[] outDegree;
     int n;
     static double beta;
-    String deadEnds;
+    boolean[] hasOut;
     static BufferedWriter log;
     public static void main(String[] args) throws Exception {
         if(args.length != 4){
@@ -37,7 +37,7 @@ public class PageRankBase {
 
         G = new LinkedList[n];
         outDegree = new int[n];
-        boolean[] hasOut = new boolean[n];
+        hasOut = new boolean[n];
 
         while((line = br.readLine()) != null){
             // 一行一行地处理...
@@ -57,13 +57,6 @@ public class PageRankBase {
                 edge.value = BigDecimal.valueOf(1.0/outDegree[edge.target]);
             }
         }
-
-        // 处理deadEnds
-        StringBuilder stringBuffer = new StringBuilder();
-        for(int i=0;i<n;i++){
-            if(!hasOut[i])stringBuffer.append(i).append(" ");
-        }
-        deadEnds = stringBuffer.toString();
     }
 
     /**
@@ -75,10 +68,10 @@ public class PageRankBase {
         for(int i=0;i<n;i++){
             values[i] = BigDecimal.valueOf(1.0/n);
         }
-
+        DecimalFormat df1 = new DecimalFormat("0.000000");
         for(int t = 0;t<T;t++){
             // 设置总数n
-            DecimalFormat df1 = new DecimalFormat("0.000000");
+
             for(int i=0;i<n;i++){
                 System.out.printf("%s ",df1.format(values[i]));
             }
@@ -91,12 +84,6 @@ public class PageRankBase {
                 }
                 newValues[i] = res;
             }
-            // 计算差值
-            double diff = 0;
-            for(int i=0;i<n;i++){
-                diff += Math.abs(values[i].subtract(newValues[i]).doubleValue());
-                values[i] = newValues[i];
-            }
 
             // 考虑阻尼系数
             for(int i=0;i<n;i++){
@@ -105,9 +92,13 @@ public class PageRankBase {
                                 BigDecimal.ONE.divide(new BigDecimal(n)).multiply(new BigDecimal(1-beta))));
             }
 
+            // 计算差值
+            double diff = 0;
             for(int i=0;i<n;i++){
+                diff += Math.abs(values[i].subtract(newValues[i]).doubleValue());
                 values[i] = newValues[i];
             }
+
 //            diff = Math.sqrt(diff/n);
 //            diff*=n;
             //标准差 <= 1/n*0.01
@@ -119,7 +110,7 @@ public class PageRankBase {
         }
         StringBuilder sb = new StringBuilder();
         for(BigDecimal value : values){
-            sb.append(value).append(" ");
+            sb.append(df1.format(value)).append(" ");
         }
         log.write(sb.toString());
         log.close();
@@ -127,7 +118,9 @@ public class PageRankBase {
     private BigDecimal[] getRow(int i){
         BigDecimal[] res = new BigDecimal[n];
         for(int j=0;j<n;j++){
-            res[j] = BigDecimal.ZERO;
+            // 处理deadEnds
+            if(!hasOut[j])res[j] = BigDecimal.ONE.divide(new BigDecimal(n));
+            else res[j] = BigDecimal.ZERO;
         }
         for(Edge edge : G[i]){
             res[edge.target] = edge.value;
